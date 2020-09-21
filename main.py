@@ -108,14 +108,23 @@ class MainWindow(tk.Tk):
 
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
+        self.minsize(500, 120)
         self.overrideredirect(False)
-        self.wm_attributes("-alpha", 255)
         self.root = tk.Frame()
         self.root.pack(fill=tk.BOTH, expand=True)
+
+        self.topPanel = tk.Frame(self.root)
+        self.topPanel.pack(pady=10)
+        self.imagePanel = tk.Frame(self.root)
+        self.imagePanel.pack(expand=True, pady=0, padx=8, ipady=0, fill=tk.BOTH)
         
+        self.sizeGrip = tk.ttk.Sizegrip(self.root)
+        self.sizeGrip.pack(anchor=tk.SE, ipady=0)
         # Store the previous region that we don't have to take another screenshot if the window doesn't move
-        self.previousRegion = [0, 0, 0, 0]
-        self.previousRawSC = None
+        # This doesn't really work since you could be watching a video or something
+        # ie. frame doesn't change but content does
+        #self.previousRegion = [0, 0, 0, 0]
+        #self.previousRawSC = None
 
         self.transformations = ['Original', 'Protanopia', 'Deuteranopia', 'Tritanopia']
         # For defining where to grab the screenshot
@@ -127,23 +136,23 @@ class MainWindow(tk.Tk):
             #print(region)
             
             # If the region hasn't changed, just reuse the old image 
-            if region == self.previousRegion:
-                sc = self.previousRawSC 
-            else: # Otherwise, we take a new screenshot
-                # Hide the window, take the sc, and show it again
-                self.withdraw()
-                # Wait for a moment, to make sure the window hides
-                time.sleep(.1)
+            #if region == self.previousRegion:
+            #    sc = self.previousRawSC 
+            #else: # Otherwise, we take a new screenshot
+            # Hide the window, take the sc, and show it again
+            self.withdraw()
+            # Wait for a moment, to make sure the window hides
+            time.sleep(.1)
 
-                # Take the screenshot
-                sc = pyautogui.screenshot(region=tuple(region))
-                self.previousRawSC = sc
+            # Take the screenshot
+            sc = pyautogui.screenshot(region=tuple(region))
+            #self.previousRawSC = sc
 
-                # Make the window visible again
-                self.deiconify()
+            # Make the window visible again
+            self.deiconify()
 
             # Save the current region
-            self.previousRegion = region 
+            #self.previousRegion = region 
 
             # Now we edit the image
             edited = colorblindTransform(np.array(sc), self.transformations[self.v.get()].lower())
@@ -152,18 +161,18 @@ class MainWindow(tk.Tk):
             self.label.configure(image=self.img)
             # Store it so it doesn't get garbage collected (might not be need since its self.img, but better safe than sorry)
             self.label.image = self.img
-            self.label.pack(padx=5, pady=5)
+            #self.label.pack(padx=5, pady=5)
 
-        self.button = tk.Button(height=2, text="Refresh", master=self.root, command=showSC, justify=tk.LEFT)
+        self.button = tk.Button(height=2, text="Refresh", master=self.topPanel, command=showSC, justify=tk.LEFT)
         self.button.pack(padx=15, pady=4, side=tk.LEFT)
 
         self.v = tk.IntVar()
         self.v.set(0)
 
         for i in range(len(self.transformations)):
-            tk.Radiobutton(self.root, text=self.transformations[i], pady=2, command=showSC, value=i, variable=self.v).pack(pady=2, side=tk.LEFT)
+            tk.Radiobutton(self.topPanel, text=self.transformations[i], pady=2, command=showSC, value=i, variable=self.v).pack(pady=2, side=tk.LEFT)
 
-        self.label = tk.Label(bg="#000000", master=self.root)
+        self.label = tk.Label(bg="#000000", master=self.imagePanel)
         self.label.pack(padx=5, pady=5, expand=True, fill=tk.BOTH, side=tk.BOTTOM)
 
 if __name__ == "__main__":
@@ -171,6 +180,6 @@ if __name__ == "__main__":
     # Create the window
     window = MainWindow()
     window.title('float')
-    window.geometry("300x300")
+    window.geometry("500x300")
     window.root.pack()
     window.mainloop()
