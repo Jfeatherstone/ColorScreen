@@ -4,7 +4,7 @@
 
 
 <p align="center">
-    <h2> Color Screen </h2>
+    <center><h2> Color Screen </h2></center>
 </p>
 
 Color Screen (title is WIP) is an application for simulating arbitrary regions of your screen as someone with various types of colorblindness would see it. This can be used to check presentations, scientific figures, etc. to make sure they are legible to everyone!
