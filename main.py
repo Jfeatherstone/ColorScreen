@@ -4,8 +4,46 @@ import pyautogui
 from PIL import Image, ImageTk
 import time
 
+# Delay on taking the screenshot (or pause afterwards, not quite sure)
 pyautogui.PAUSE = .1
 
+# Here are all of the transformation matrices that we use
+# They are taken (mostly) from the link above
+
+# Transform to the "linear-light" (XYZ) space
+RGBtoXYZTransform = np.array([[.4124564, .3575761, .1804375],
+                    [.2126729, .7151522, .0721750],
+                    [.0193339, .1191920, .9503041]])
+
+# Transform to the Long, Medium, Short (LMS) color space
+# This uses the Hunt-Pointer-Estevez model
+XYZtoLMSTransform = np.array([[.4002, .7076, -.0808],
+                             [-.2263, 1.1653, .0457],
+                             [0, 0, .9182]])
+
+# Create a single operator to define both transformations
+RGBtoLMSTransform = np.dot(XYZtoLMSTransform, RGBtoXYZTransform)
+# And calculate the inverse transform to transform back after we modify the image
+LMStoRGBTransform = np.linalg.inv(RGBtoLMSTransform)
+#print(LMStoRGBTransform)
+
+# These are our specific color blindness matrices
+# Each on leaves two cones unmodified while transforming one
+
+# Protanopia - Missing L cones -
+protanopiaTransform = np.array([[0, 1.05118294, -.05116099],
+                               [0, 1., 0],
+                               [0, 0, 1.]])
+
+# Deuteranopia - Missing M cones
+deuteranopiaTransform = np.array([[1., 0, 0],
+                                 [.9513092, 0, .04866992],
+                                 [0, 0, 1.]])
+
+# Tritanopia - Missing S cones
+tritanopiaTransform = np.array([[1., 0, 0],
+                               [0, 1., 0],
+                               [-.86744736, 1.86727089, 0]])
 # This method is outlined in the following repo (adapted from UE4)
 # https://github.com/botman99/ColorBlindSimulation
 # which itself references:
@@ -17,43 +55,6 @@ def colorblindTransform(sRGBImageMatrix, transformType):
     # For a detailed explanation of the entire process, see:
     # https://ixora.io/projects/colorblindness/color-blindness-simulation-research/
     
-    # Here are all of the transformation matrices that we use
-    # They are taken (mostly) from the link above
-    
-    # Transform to the "linear-light" (XYZ) space
-    RGBtoXYZTransform = np.array([[.4124564, .3575761, .1804375],
-                        [.2126729, .7151522, .0721750],
-                        [.0193339, .1191920, .9503041]])
-    
-    # Transform to the Long, Medium, Short (LMS) color space
-    # This uses the Hunt-Pointer-Estevez model
-    XYZtoLMSTransform = np.array([[.4002, .7076, -.0808],
-                                 [-.2263, 1.1653, .0457],
-                                 [0, 0, .9182]])
-
-    # Create a single operator to define both transformations
-    RGBtoLMSTransform = np.dot(XYZtoLMSTransform, RGBtoXYZTransform)
-    # And calculate the inverse transform to transform back after we modify the image
-    LMStoRGBTransform = np.linalg.inv(RGBtoLMSTransform)
-    #print(LMStoRGBTransform)
-
-    # These are our specific color blindness matrices
-    # Each on leaves two cones unmodified while transforming one
-    
-    # Protanopia - Missing L cones -
-    protanopiaTransform = np.array([[0, 1.05118294, -.05116099],
-                                   [0, 1., 0],
-                                   [0, 0, 1.]])
-    
-    # Deuteranopia - Missing M cones
-    deuteranopiaTransform = np.array([[1., 0, 0],
-                                     [.9513092, 0, .04866992],
-                                     [0, 0, 1.]])
-    
-    # Tritanopia - Missing S cones
-    tritanopiaTransform = np.array([[1., 0, 0],
-                                   [0, 1., 0],
-                                   [-.86744736, 1.86727089, 0]])
     
     # Transform from standard RGB to linear RGB
     # 2.4 is the "gamma" value; if you want more information look that up (or check it out on one of the previous pages)
