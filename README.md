@@ -10,6 +10,14 @@ Color Screen (title is WIP) is an application for simulating arbitrary regions o
 
 The program is written in Python with the GUI created using tkinter, which I believe is cross platform. As of now, I have only tested the program on linux, but I will work on creating releases that are stable for both Windows and Mac once I work out some of the kinks!
 
+### Installation
+
+So far, I only have a working installation process on Linux, but I am working on both Windows and Mac now!
+
+To install for Linux, head over to the [releases](https://github.com/Jfeatherstone/ColorScreen/releases) page, and follow the instructions! I've posted a version with all of the dependencies packaged with the script (pretty large file) or just the python file (so you may have to resolve some dependencies; listed below).
+
+If there are any issues with installation, or bugs with the program in general, please let me know!
+
 ### Dependencies
 
 - tkinter
