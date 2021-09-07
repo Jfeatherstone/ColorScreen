@@ -9,7 +9,7 @@
 Color Screen is an application for simulating arbitrary regions of your screen as someone with various types of colorblindness would see it. This can be used to check presentations, scientific figures, etc. to make sure they are legible to everyone!
 
 <p align="center">
-    <Video controls src="./images/colorscreen_demo.webm" align="center" width="620px">
+    <img src="./images/colorscreen_demo.gif" align="center" width="620px">
 </p>
 
 The program is written in Python with the GUI created using PyQt5, which I believe is cross platform. As of now, I have only tested the program on linux, but I will work on creating releases that are stable for both Windows and Mac once I work out some of the kinks!
