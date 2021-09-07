@@ -165,7 +165,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.imagePane = QtWidgets.QLabel()
         self.imagePane.setSizePolicy(Qt.QSizePolicy.Expanding, Qt.QSizePolicy.Expanding)
         self.imagePane.setAlignment(Qt.Qt.AlignCenter)
+        #self.imagePane.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+        #self.centralWidget.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+        #self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+        #self.imagePane.setStyleSheet("background:transparent;")
+        #self.setStyleSheet("background:transparent;")
         #self.imagePane.setStyleSheet("""
+        #                             background: #FFFFFFFF;
         #                             outline-style: solid;
         #                             outline-color: black;
         #                             outline-width: 5px
