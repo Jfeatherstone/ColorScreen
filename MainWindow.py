@@ -1,8 +1,10 @@
-import tkinter as tk
+import sys
+from PyQt5 import QtWidgets, QtCore, QtGui, Qt
 import numpy as np
-import pyautogui
-from PIL import Image, ImageTk
 import time
+import matplotlib.pyplot as plt
+import pyautogui
+from PIL import Image, ImageQt
 
 # Delay on taking the screenshot (or pause afterwards, not quite sure)
 pyautogui.PAUSE = .1
@@ -105,82 +107,136 @@ def colorblindTransform(sRGBImageMatrix, transformType):
 
     return editedImageMatrix
 
-class MainWindow(tk.Tk):
 
-    def __init__(self, *args, **kwargs):
-        tk.Tk.__init__(self, *args, **kwargs)
-        self.minsize(500, 120)
-        self.overrideredirect(False)
-        self.root = tk.Frame()
-        self.root.pack(fill=tk.BOTH, expand=True)
+class MainWindow(QtWidgets.QMainWindow):
 
-        self.topPanel = tk.Frame(self.root)
-        self.topPanel.pack(pady=10)
-        self.imagePanel = tk.Frame(self.root)
-        self.imagePanel.pack(expand=True, pady=0, padx=8, ipady=0, fill=tk.BOTH)
+    def __init__(self, app):
+        super(MainWindow, self).__init__()
+
+        screen = app.primaryScreen()
+        defaultWindowSize = screen.size()*.5
+        self.resize(defaultWindowSize)
+
+        self.centralWidget = QtWidgets.QWidget()
+
+        self.horizontalLayout = QtWidgets.QHBoxLayout()
+        self.horizontalLayout.setAlignment(Qt.Qt.AlignCenter)
+        self.layout = QtWidgets.QVBoxLayout()
+        self.layout.setAlignment(Qt.Qt.AlignCenter)
+        # To create size grips
+        self.statusBar()
+        self.setStyleSheet("""
+                           background: lightgray;
+                           """)
+
+        # Refresh button
+        self.refreshBtn = QtWidgets.QPushButton('Refresh')
+        self.refreshBtn.setMaximumWidth(100)
+        self.refreshBtn.clicked.connect(self.refreshRegion)
+        self.horizontalLayout.addWidget(self.refreshBtn)
+        self.layout.setAlignment(Qt.Qt.AlignTop)
+        self.layout.setSpacing(10)
+
+        # Radio buttons
+        self.buttonGroup = QtWidgets.QButtonGroup()
+
+        self.originalBtn = QtWidgets.QRadioButton('Original')
+        self.protanopiaBtn = QtWidgets.QRadioButton('Protanopia')
+        self.deuteranopiaBtn = QtWidgets.QRadioButton('Deuteranopia')
+        self.tritanopiaBtn = QtWidgets.QRadioButton('Tritanopia')
+
+        self.buttonGroup.buttonClicked.connect(self.changeTransform)
+
+        self.buttonGroup.addButton(self.originalBtn)
+        self.buttonGroup.addButton(self.protanopiaBtn)
+        self.buttonGroup.addButton(self.deuteranopiaBtn)
+        self.buttonGroup.addButton(self.tritanopiaBtn)
+
+        self.horizontalLayout.addWidget(self.originalBtn)
+        self.horizontalLayout.addWidget(self.protanopiaBtn)
+        self.horizontalLayout.addWidget(self.deuteranopiaBtn)
+        self.horizontalLayout.addWidget(self.tritanopiaBtn)
+
+        self.originalBtn.setChecked(True)
+
+        self.layout.addLayout(self.horizontalLayout)
+
+        # Where the image will be displayed
+        self.imagePane = QtWidgets.QLabel()
+        self.imagePane.setSizePolicy(Qt.QSizePolicy.Expanding, Qt.QSizePolicy.Expanding)
+        self.imagePane.setAlignment(Qt.Qt.AlignCenter)
+        #self.imagePane.setStyleSheet("""
+        #                             outline-style: solid;
+        #                             outline-color: black;
+        #                             outline-width: 5px
+        #                             """)
+
+        self.layout.addWidget(self.imagePane)
+
+        self.currentSC = None
+
+        self.centralWidget.setLayout(self.layout)
+        self.setCentralWidget(self.centralWidget)
+        self.setWindowTitle('float')
+
+
+    def refreshRegion(self):
+        # Whichever radio button is selected
+        currentTransform = self.buttonGroup.checkedButton().text()
+
+        # Grab the region of the screen
+        widgetLocation = self.imagePane.pos()
+        windowLocation = self.pos()
+        widgetDimensions = self.imagePane.size()
+
+        absoluteWidgetRegion = (int(widgetLocation.x() + windowLocation.x()),
+                                int(widgetLocation.y() + windowLocation.y()),
+                                int(widgetDimensions.width()),
+                                int(widgetDimensions.height()))
+
+        # Hide the window
+        self.setVisible(False)
+
+        # Wait
+        time.sleep(.1)
+
+        # Now take a screenshot
+        sc = pyautogui.screenshot(region=absoluteWidgetRegion)
+        self.currentSC = sc 
+
+        # Tranform it
+        edited = colorblindTransform(np.array(sc), currentTransform)
+        img = Image.fromarray(np.uint8(edited)).convert('RGBA')
+        pixmap = QtGui.QPixmap.fromImage(ImageQt.ImageQt(img))
+
+        self.imagePane.setPixmap(pixmap)
+        # So that we can make the window smaller if we want
+        self.imagePane.setMinimumSize(Qt.QSize(10, 10))
+
+        self.setVisible(True)
         
-        self.sizeGrip = tk.ttk.Sizegrip(self.root)
-        self.sizeGrip.pack(anchor=tk.SE, ipady=0)
-        # Store the previous region that we don't have to take another screenshot if the window doesn't move
-        # This doesn't really work since you could be watching a video or something
-        # ie. frame doesn't change but content does
-        #self.previousRegion = [0, 0, 0, 0]
-        #self.previousRawSC = None
+        return
 
-        self.transformations = ['Original', 'Protanopia', 'Deuteranopia', 'Tritanopia']
-        # For defining where to grab the screenshot
-        def windowSpecs():
-            return [self.label.winfo_rootx(), self.label.winfo_rooty(), self.label.winfo_width(), self.label.winfo_height()] 
+    def changeTransform(self):
 
-        def showSC():
-            region = windowSpecs()
-            #print(region)
-            
-            # If the region hasn't changed, just reuse the old image 
-            #if region == self.previousRegion:
-            #    sc = self.previousRawSC 
-            #else: # Otherwise, we take a new screenshot
-            # Hide the window, take the sc, and show it again
-            self.withdraw()
-            # Wait for a moment, to make sure the window hides
-            time.sleep(.1)
+        if self.currentSC != None:
+            # Whichever radio button is selected
+            currentTransform = self.buttonGroup.checkedButton().text()
 
-            # Take the screenshot
-            sc = pyautogui.screenshot(region=tuple(region))
-            #self.previousRawSC = sc
+            # Tranform it
+            edited = colorblindTransform(np.array(self.currentSC), currentTransform)
+            img = Image.fromarray(np.uint8(edited)).convert('RGBA')
+            pixmap = QtGui.QPixmap.fromImage(ImageQt.ImageQt(img))
 
-            # Make the window visible again
-            self.deiconify()
+            self.imagePane.setPixmap(pixmap)
+            # So that we can make the window smaller if we want
+            self.imagePane.setMinimumSize(Qt.QSize(10, 10))
 
-            # Save the current region
-            #self.previousRegion = region 
+            return
 
-            # Now we edit the image
-            edited = colorblindTransform(np.array(sc), self.transformations[self.v.get()].lower())
-            self.img = ImageTk.PhotoImage(Image.fromarray(np.uint8(edited)))
-                    
-            self.label.configure(image=self.img)
-            # Store it so it doesn't get garbage collected (might not be need since its self.img, but better safe than sorry)
-            self.label.image = self.img
-            #self.label.pack(padx=5, pady=5)
 
-        self.button = tk.Button(height=2, text="Refresh", master=self.topPanel, command=showSC, justify=tk.LEFT)
-        self.button.pack(padx=15, pady=4, side=tk.LEFT)
-
-        self.v = tk.IntVar()
-        self.v.set(0)
-
-        for i in range(len(self.transformations)):
-            tk.Radiobutton(self.topPanel, text=self.transformations[i], pady=2, command=showSC, value=i, variable=self.v).pack(pady=2, side=tk.LEFT)
-
-        self.label = tk.Label(bg="#000000", master=self.imagePanel)
-        self.label.pack(padx=5, pady=5, expand=True, fill=tk.BOTH, side=tk.BOTTOM)
-
-if __name__ == "__main__":
-   
-    # Create the window
-    window = MainWindow()
-    window.title('float')
-    window.geometry("500x300")
-    window.root.pack()
-    window.mainloop()
+if __name__ == '__main__':
+    app = QtWidgets.QApplication(sys.argv)
+    window = MainWindow(app)
+    window.show()
+    sys.exit(app.exec())

@@ -3,7 +3,7 @@
 block_cipher = None
 
 
-a = Analysis(['main.py'],
+a = Analysis(['MainWindow.py'],
              pathex=['/home/jack/workspaces/jupyter-workspace/ColorBlindnessSimulator'],
              binaries=[],
              datas=[],
